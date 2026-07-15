@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<!-- 더블유학원 교사용 직독직해 워크북 제작 툴 (단일 파일, GitHub Pages 배포용) -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>직독직해 워크북 메이커 — 더블유학원</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{--bg:#F6F6F1;--card:#fff;--line:#EAEAE2;--ink:#161719;--sub:#74757E;--lime:#C6F24E;--limesoft:#EFFBD0;--limedeep:#6B8A0E;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Pretendard",-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+a{color:var(--limedeep);}a:hover{color:var(--ink);}
+button{font-family:inherit;cursor:pointer;}
+.app{display:flex;min-height:100vh;}
+/* ── 사이드바 ── */
+.side{width:250px;flex:none;background:#fff;border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:8px;}
+.brand{font-size:17px;font-weight:900;letter-spacing:-0.02em;padding:4px 6px 12px;}
+.brand small{display:block;font-size:11px;color:var(--sub);font-weight:600;margin-top:2px;}
+.wb-item{display:flex;align-items:center;gap:8px;padding:10px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;text-align:left;width:100%;}
+.wb-item.on{background:var(--limesoft);border-color:#cfe6b0;color:var(--limedeep);}
+.wb-item:hover{border-color:var(--lime);}
+.wb-item .del{margin-left:auto;border:none;background:none;color:#c0c0c6;font-size:13px;padding:2px 4px;}
+.wb-item .del:hover{color:#d33;}
+.btn{padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:700;white-space:nowrap;}
+.btn:hover{border-color:var(--lime);background:var(--limesoft);}
+.btn.pri{background:var(--ink);color:#fff;border-color:var(--ink);}
+.btn.pri:hover{background:#000;}
+.btn.lime{background:var(--lime);border-color:var(--lime);color:var(--ink);}
+.btn.lime:hover{filter:brightness(0.96);}
+.btn:disabled{opacity:0.45;cursor:default;}
+.side .foot{margin-top:auto;display:flex;flex-direction:column;gap:6px;font-size:12px;}
+/* ── 메인 ── */
+.main{flex:1;padding:22px 26px 80px;max-width:980px;}
+h2{font-size:16px;font-weight:800;margin:22px 0 10px;}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;}
+textarea{width:100%;min-height:130px;border:1px solid var(--line);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;line-height:1.6;resize:vertical;}
+textarea:focus,input:focus{outline:2px solid var(--lime);}
+input[type=text],input[type=password]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.hint{font-size:12px;color:var(--sub);line-height:1.5;}
+.tag{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--limesoft);color:var(--limedeep);white-space:nowrap;}
+.tag.warn{background:#FFF1F0;color:#c0392b;}
+/* 지문 편집 */
+.psg{border:1px solid var(--line);border-radius:14px;background:#fff;margin-bottom:14px;overflow:hidden;}
+.psg-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#FBFBF8;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+.psg-head input{flex:1;min-width:180px;font-weight:700;}
+.sent{padding:12px 16px;border-bottom:1px dashed #eee;}
+.sent:last-child{border-bottom:none;}
+.sent .full{font-size:13px;color:var(--sub);margin-bottom:8px;}
+.chunks{display:flex;flex-direction:column;gap:6px;}
+.chunk{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center;}
+.chunk input{width:100%;font-size:13px;}
+.chunk .en{background:#F4F8FF;}
+.chunk .ko{background:#FFFBEF;}
+.mini{border:1px solid var(--line);background:#fff;border-radius:7px;font-size:11px;padding:5px 8px;color:var(--sub);white-space:nowrap;}
+.mini:hover{border-color:var(--lime);color:var(--ink);}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--limedeep);border-top-color:transparent;border-radius:50%;animation:sp 0.7s linear infinite;vertical-align:-2px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+dialog{border:1px solid var(--line);border-radius:16px;padding:22px;max-width:460px;width:92%;}
+dialog::backdrop{background:rgba(20,22,25,0.4);}
+/* ══ 인쇄 시트 (화면 미리보기 + 인쇄 공용) ══ */
+.print-area{display:none;}
+body.preview .app{display:none;}
+body.preview .print-area{display:block;background:#93958f;padding:24px 0;}
+body.preview .preview-bar{display:flex;}
+.preview-bar{display:none;position:sticky;top:0;z-index:50;background:var(--ink);color:#fff;padding:10px 20px;gap:10px;align-items:center;}
+.preview-bar .btn{border-color:#444;background:#2a2b2e;color:#fff;}
+.preview-bar .btn.lime{background:var(--lime);color:var(--ink);border-color:var(--lime);}
+.sheet{width:210mm;min-height:297mm;margin:0 auto 20px;background:#fff;padding:16mm 15mm;box-shadow:0 4px 18px rgba(0,0,0,0.25);color:#111;}
+.sheet,.sheet *{font-family:"Pretendard",sans-serif;}
+.wb-head{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2.5px solid #111;padding-bottom:8px;margin-bottom:4px;}
+.wb-head .t1{font-size:18px;font-weight:900;}
+.wb-head .t2{font-size:11px;font-weight:700;color:#555;}
+.id-line{display:flex;gap:18px;font-size:12px;padding:8px 0 2px;border-bottom:1px solid #bbb;margin-bottom:14px;}
+.id-line span{display:inline-flex;align-items:baseline;gap:6px;}
+.id-line .bl{display:inline-block;width:70px;border-bottom:1px solid #888;height:14px;}
+.sec-t{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;margin:16px 0 8px;}
+.sec-t .no{background:#111;color:#fff;border-radius:6px;padding:1px 8px;font-size:12px;}
+.sec-t small{font-weight:600;color:#666;font-size:11px;}
+.rd{font-size:13.5px;line-height:2.15;}
+.rd .ch{display:inline-block;vertical-align:top;white-space:nowrap;}
+.rd .sl{color:#999;font-weight:300;padding:0 2px;}
+.rd .ko{display:block;font-size:9.5px;color:#777;line-height:1;margin-top:-6px;}
+.rd .snum,.wr .snum{font-weight:800;font-size:11px;color:#555;margin-right:4px;}
+.wr{margin-bottom:10px;font-size:13px;line-height:1.8;page-break-inside:avoid;}
+.wr .line{display:block;border-bottom:1px solid #aaa;height:22px;margin-top:4px;}
+.arr{margin-bottom:12px;page-break-inside:avoid;}
+.arr .boxes{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
+.arr .bx{border:1px solid #888;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:6px;}
+.arr .bx i{font-style:normal;width:16px;height:16px;border:1px solid #999;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#aaa;}
+.ans .sent-a{margin-bottom:10px;font-size:12px;page-break-inside:avoid;}
+.ans table{border-collapse:collapse;width:100%;margin-top:3px;}
+.ans td{border:1px solid #ccc;padding:3px 6px;font-size:11px;}
+.ans td.k{color:#555;}
+.pagebreak{page-break-before:always;}
+@page{size:A4 portrait;margin:0;}
+@media print{
+  body{background:#fff;}
+  body.preview .preview-bar{display:none;}
+  body.preview .print-area{padding:0;background:#fff;}
+  .sheet{box-shadow:none;margin:0;width:auto;min-height:0;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand">📘 직독직해 워크북<small>더블유학원 · 교사용 제작 툴</small></div>
+    <button class="btn lime" onclick="newWorkbook()">＋ 새 워크북</button>
+    <div id="wb-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
+    <div class="foot">
+      <button class="btn" onclick="openKeyDialog()">🔑 API 키 설정</button>
+      <div class="row" style="gap:6px;">
+        <button class="btn" style="flex:1;" onclick="exportJSON()">내보내기</button>
+        <button class="btn" style="flex:1;" onclick="document.getElementById('imp').click()">가져오기</button>
+        <input type="file" id="imp" accept=".json" style="display:none;" onchange="importJSON(this)">
+      </div>
+      <div class="hint">작업은 이 브라우저에 자동 저장됩니다. 다른 컴퓨터로 옮길 땐 내보내기/가져오기를 쓰세요.</div>
+    </div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<div class="preview-bar">
+  <b style="font-size:14px;">인쇄 미리보기</b>
+  <span style="font-size:12px;color:#aaa;">Ctrl+P (Mac: Cmd+P) → 인쇄 또는 PDF 저장</span>
+  <span style="flex:1;"></span>
+  <label style="font-size:12px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="chk-ans" checked onchange="renderPrint()"> 정답지 포함</label>
+  <button class="btn lime" onclick="window.print()">🖨 인쇄</button>
+  <button class="btn" onclick="closePreview()">← 편집으로</button>
+</div>
+<div class="print-area" id="print-area"></div>
+
+<dialog id="key-dialog">
+  <h3 style="margin:0 0 6px;font-size:16px;">API 키 설정</h3>
+  <p class="hint" style="margin:0 0 12px;">청크 나누기·해석 자동 생성에 사용됩니다. 키는 이 브라우저에만 저장됩니다.<br>
+  · Gemini 키(<b>AIza...</b>): <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> 에서 무료 발급<br>
+  · OpenAI 키(<b>sk-...</b>)도 사용 가능 (크레딧 필요)</p>
+  <input type="password" id="key-input" placeholder="AIza... 또는 sk-..." style="width:100%;margin-bottom:12px;">
+  <div class="row" style="justify-content:flex-end;">
+    <button class="btn" onclick="document.getElementById('key-dialog').close()">취소</button>
+    <button class="btn pri" onclick="saveKey()">저장</button>
+  </div>
+</dialog>
+
+<script>
+// ══ 상태 ══
+const LS_KEY='wgt_workbooks_v1', LS_API='wgt_wb_apikey';
+let state={workbooks:[],cur:null};
+function load(){try{const d=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(d&&d.workbooks)state=d;}catch(e){}}
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
+function curWB(){return state.workbooks.find(w=>w.id===state.cur)||null;}
+function uid(){return 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function newWorkbook(){
+  const w={id:uid(),name:'새 워크북 '+(state.workbooks.length+1),passages:[]};
+  state.workbooks.unshift(w);state.cur=w.id;save();renderAll();
+}
+function delWorkbook(id,ev){ev.stopPropagation();if(!confirm('이 워크북을 삭제할까요?'))return;
+  state.workbooks=state.workbooks.filter(w=>w.id!==id);if(state.cur===id)state.cur=state.workbooks[0]?.id||null;save();renderAll();}
+
+// ══ 사이드바 ══
+function renderSide(){
+  document.getElementById('wb-list').innerHTML=state.workbooks.map(w=>
+    `<button class="wb-item${w.id===state.cur?' on':''}" onclick="state.cur='${w.id}';save();renderAll()">
+       <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(w.name)}</span>
+       <span class="del" onclick="delWorkbook('${w.id}',event)">✕</span></button>`).join('');
+}
+
+// ══ 메인 편집 화면 ══
+function renderMain(){
+  const m=document.getElementById('main');const w=curWB();
+  if(!w){m.innerHTML=`<div class="card" style="margin-top:40px;text-align:center;padding:50px;">
+    <div style="font-size:34px;margin-bottom:10px;">📘</div>
+    <div style="font-weight:800;font-size:16px;margin-bottom:6px;">직독직해 워크북 만들기</div>
+    <div class="hint" style="margin-bottom:16px;">영어 지문을 붙여넣으면 청크(의미단위)와 해석을 자동 생성하고,<br>A4 인쇄용 워크북(끊어읽기·해석쓰기·영작·어순배열·정답지)을 만들어 줍니다.</div>
+    <button class="btn lime" onclick="newWorkbook()">＋ 새 워크북 시작</button></div>`;return;}
+  let html=`<div class="row" style="margin-bottom:14px;">
+    <input type="text" value="${esc(w.name)}" onchange="curWB().name=this.value;save();renderSide()" style="font-size:16px;font-weight:800;flex:1;min-width:200px;">
+    <button class="btn pri" onclick="openPreview()" ${w.passages.some(p=>p.sentences.length)?'':'disabled'}>🖨 인쇄 미리보기</button>
+  </div>
+  <div class="card">
+    <div style="font-weight:800;font-size:14px;margin-bottom:8px;">지문 추가</div>
+    <textarea id="new-psg" placeholder="영어 지문을 붙여넣으세요. (예: 모의고사·교과서 지문 등)"></textarea>
+    <div class="row" style="margin-top:8px;">
+      <button class="btn lime" id="analyze-btn" onclick="addPassage()">✨ 자동 분석 (청크+해석)</button>
+      <span class="hint" id="analyze-msg"></span>
+    </div>
+  </div>`;
+  html+=w.passages.map((p,pi)=>{
+    const okAll=p.sentences.every(s=>joinOK(s));
+    return `<div class="psg">
+    <div class="psg-head">
+      <span class="tag">지문 ${pi+1}</span>
+      <input type="text" value="${esc(p.title)}" onchange="curWB().passages[${pi}].title=this.value;save()">
+      <span class="tag ${okAll?'':'warn'}">${okAll?'검증 통과':'⚠ 원문·청크 불일치'}</span>
+      <button class="mini" onclick="reanalyze(${pi})">♻ 재분석</button>
+      <button class="mini" onclick="movePsg(${pi},-1)" ${pi===0?'disabled':''}>↑</button>
+      <button class="mini" onclick="movePsg(${pi},1)" ${pi===curWB().passages.length-1?'disabled':''}>↓</button>
+      <button class="mini" style="color:#c0392b;" onclick="delPsg(${pi})">삭제</button>
+    </div>
+    ${p.sentences.map((s,si)=>`<div class="sent">
+      <div class="full"><b>${si+1}.</b> ${esc(s.full)} ${joinOK(s)?'':'<span class="tag warn">청크≠원문</span> <button class="mini" onclick="fixFull('+pi+','+si+')">청크 기준으로 원문 갱신</button>'}</div>
+      <div class="chunks">${s.chunks.map((c,ci)=>`<div class="chunk">
+        <input class="en" value="${esc(c[0])}" onchange="setChunk(${pi},${si},${ci},0,this.value)">
+        <input class="ko" value="${esc(c[1])}" onchange="setChunk(${pi},${si},${ci},1,this.value)">
+        <span class="row" style="gap:4px;">
+          <button class="mini" title="다음 청크와 합치기" onclick="mergeChunk(${pi},${si},${ci})" ${ci===s.chunks.length-1?'disabled':''}>＋합침</button>
+          <button class="mini" title="청크 삭제" onclick="delChunk(${pi},${si},${ci})" ${s.chunks.length<=1?'disabled':''}>✕</button>
+        </span></div>`).join('')}
+      </div></div>`).join('')}
+  </div>`;}).join('');
+  m.innerHTML=html;
+}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function joinOK(s){return norm(s.chunks.map(c=>c[0]).join(' '))===norm(s.full);}
+function norm(t){return t.replace(/\s+/g,' ').trim();}
+function setChunk(pi,si,ci,k,v){curWB().passages[pi].sentences[si].chunks[ci][k]=v;save();renderMain();}
+function mergeChunk(pi,si,ci){const ch=curWB().passages[pi].sentences[si].chunks;
+  ch[ci]=[ch[ci][0]+' '+ch[ci+1][0],(ch[ci][1]+' '+ch[ci+1][1]).trim()];ch.splice(ci+1,1);save();renderMain();}
+function delChunk(pi,si,ci){curWB().passages[pi].sentences[si].chunks.splice(ci,1);save();renderMain();}
+function fixFull(pi,si){const s=curWB().passages[pi].sentences[si];s.full=norm(s.chunks.map(c=>c[0]).join(' '));save();renderMain();}
+function delPsg(pi){if(!confirm('지문 '+(pi+1)+'을 삭제할까요?'))return;curWB().passages.splice(pi,1);save();renderMain();}
+function movePsg(pi,d){const ps=curWB().passages;const t=ps[pi];ps[pi]=ps[pi+d];ps[pi+d]=t;save();renderMain();}
+
+// ══ AI 분석 ══
+function getKey(){return localStorage.getItem(LS_API)||'';}
+function openKeyDialog(){document.getElementById('key-input').value=getKey();document.getElementById('key-dialog').showModal();}
+function saveKey(){localStorage.setItem(LS_API,document.getElementById('key-input').value.trim());document.getElementById('key-dialog').close();}
+
+function buildPrompt(text){
+return `당신은 한국 영어교육 전문가입니다. 아래 영어 지문을 "문맥순해(직독직해)" 훈련용으로 분석하세요.
+문맥순해 원칙: 영어 어순 그대로, 청크를 앞에서부터 순서대로 읽어 내려가며 한국어로 자연스럽게 이해하는 방식입니다. 한국어 해석도 청크 순서대로 읽었을 때 하나의 자연스러운 흐름이 되어야 합니다 (한국어 어순으로 재배열 금지).
+규칙:
+1) 지문을 문장 단위로 나눈다.
+2) 각 문장을 2~6단어의 의미단위(청크)로 끊는다. (주어부 / 동사부 / 목적·보어 / 수식어구 단위)
+   - 의미단위가 길어 한 번에 처리하기 어려우면(대략 7단어 이상) 전치사구·관계사절·that절·접속사(and/but/or) 경계에서 매끄럽게 더 끊는다. 수식절은 선행 명사와 분리해 별도 청크로 한다.
+   - [문법 구조 판별] 청크를 끊기 전에 각 구의 문법적 역할을 먼저 판단하고, 해석 어미로 그 역할을 정확히 표시한다.
+     · 동사의 목적어인 to부정사/동명사 (choose/decide/want/plan/refuse + to-V 등) → "~하기로 / ~하는 것을"로 해석. 병렬 동작("~하고, 그리고 ~한다")으로 오역 금지.
+     · 예: "Whether society chooses" → "사회가 선택하든지" / "to recognize AI" → "인공지능을 인정하기로" (○) — "인공지능을 인정하든지" (✕ 병렬 오역)
+     · 목적·부사적 to부정사 → "~하기 위해", 진주어/보어 → "~하는 것(이다)" 등, 역할에 맞는 어미 선택.
+예시 4 (긴 구조 끊기 — 이 방식을 그대로 따를 것):
+"the question" → "질문은" / "of whether artificial intelligence should be granted a form of moral consideration" → "인공지능이 도덕적 배려의 형태를 부여받아야 하는지에 관한"
+"While some argue" → "어떤 이들이 주장하는 반면에" / "that AI systems are mere tools" → "인공지능 시스템은 단순한 도구여서" / "devoid of consciousness and thus undeserving of rights," → "의식이 없고 권리를 받을 자격이 없다고,"
+"that the complexity of machine learning algorithms" → "머신러닝 알고리즘의 복잡성" / "and their capacity to influence human decision-making" → "그리고 인간의 의사결정에 영향을 미칠 수 있는 그 능력이"
+3) 각 문장에서 청크의 영어 부분들을 공백 한 칸으로 이어붙이면 원문 문장과 정확히 일치해야 한다 (단어·구두점 변경/누락/추가 금지).
+4) [가장 중요] 한국어 해석의 품질 기준: 청크 해석들을 앞에서부터 순서대로 이어 읽었을 때, 그 자체로 매끄러운 한국어 문장처럼 자연스럽게 이해돼야 한다.
+   - 각 청크에는 앞뒤와 자연스럽게 이어지는 연결어미·조사를 선택한다 (~때, ~고, ~다고, ~다면, ~하는 것을, ~에 대해 등).
+   - 명사구 청크에는 문장 내 역할이 드러나는 조사를 붙인다 (을/를, 이/가, 에게 등).
+   - 기계적 직역·어색한 번역투 금지. 의미가 통하는 자연스러운 표현 우선.
+   - 동사 청크는 영어 위치 그대로 그 자리에서 서술한다 (한국어 어순으로 문장 끝으로 옮기지 않는다).
+예시 1 (이 스타일을 그대로 따를 것):
+"Today, I want to share a very special message." → [["Today,","오늘은"],["I want to share","나누고 싶습니다"],["a very special message.","아주 특별한 메시지를"]]
+예시 2:
+"Many young students worry deeply about their future." → [["Many young students","많은 어린 학생이"],["worry deeply","깊이 걱정합니다"],["about their future.","그들의 미래에 대해"]]
+예시 3 (복문 — 연결어미로 흐름 유지):
+"When I was young, I believed that dreams come true if we never give up." → [["When I was young,","내가 어렸을 때,"],["I believed","나는 믿었습니다"],["that dreams come true","꿈은 이루어진다고"],["if we never give up.","우리가 결코 포기하지 않는다면"]]
+나쁜 예 (금지): "about their future."를 "그들의 미래"처럼 조사 없이 끊거나, 이어 읽었을 때 말이 안 되는 토막 해석.
+5) 지문 내용을 반영한 짧은 한국어 제목을 짓는다.
+6) 아래 JSON 형식만 출력한다. 다른 말은 하지 않는다.
+{"title":"제목","sentences":[{"full":"원문 문장","chunks":[["영어 청크","한국어 해석"],...]},...]}
+
+지문:
+${text}`;}
+
+async function callAI(prompt){
+  const key=getKey();
+  if(key.startsWith('AIza')){
+    let lastErr;
+    for(const model of ['gemini-2.5-flash','gemini-2.0-flash']){
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:8192}})});
+      if(r.ok){const d=await r.json();return d.candidates?.[0]?.content?.parts?.[0]?.text||'';}
+      lastErr=new Error('Gemini 오류 '+r.status+(r.status===400||r.status===403?' — API 키를 확인하세요':''));
+      if(r.status!==404)break; // 404(모델 없음)만 다음 모델로 폴백
+    }
+    throw lastErr;
+  }
+  if(key.startsWith('sk-')){
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'gpt-4o-mini',temperature:0.2,messages:[{role:'user',content:prompt}]})});
+    if(!r.ok)throw new Error('OpenAI 오류 '+r.status+(r.status===401?' — API 키를 확인하세요':r.status===429?' — 크레딧/사용량을 확인하세요':''));
+    const d=await r.json();return d.choices?.[0]?.message?.content||'';
+  }
+  if(window.claude&&window.claude.complete){ // 미리보기 환경용
+    return await window.claude.complete({messages:[{role:'user',content:prompt}],max_tokens:8000});
+  }
+  throw new Error('NO_KEY');
+}
+function parseAI(text){
+  const m=text.match(/\{[\s\S]*\}/);if(!m)throw new Error('응답에서 JSON을 찾지 못했습니다');
+  const d=JSON.parse(m[0]);
+  if(!Array.isArray(d.sentences)||!d.sentences.length)throw new Error('문장 데이터가 비어 있습니다');
+  d.sentences.forEach(s=>{if(!s.full||!Array.isArray(s.chunks))throw new Error('형식 오류');
+    s.chunks=s.chunks.map(c=>[String(c[0]??''),String(c[1]??'')]);});
+  return d;
+}
+async function analyze(text,msgEl,btn){
+  btn.disabled=true;msgEl.innerHTML='<span class="spin"></span> 분석 중… (10~20초)';
+  try{
+    const d=parseAI(await callAI(buildPrompt(text)));
+    msgEl.textContent='';btn.disabled=false;return d;
+  }catch(e){
+    btn.disabled=false;
+    if(e.message==='NO_KEY'){msgEl.innerHTML='API 키가 없습니다 — <a href="#" onclick="openKeyDialog();return false;">키 설정</a> 후 다시 시도하세요';}
+    else msgEl.textContent='실패: '+e.message+' (다시 시도해 보세요)';
+    return null;
+  }
+}
+async function addPassage(){
+  const ta=document.getElementById('new-psg');const text=ta.value.trim();
+  if(!text){alert('지문을 붙여넣어 주세요.');return;}
+  const d=await analyze(text,document.getElementById('analyze-msg'),document.getElementById('analyze-btn'));
+  if(!d)return;
+  curWB().passages.push({title:d.title||('지문 '+(curWB().passages.length+1)),source:text,sentences:d.sentences});
+  save();renderMain();
+}
+async function reanalyze(pi){
+  const p=curWB().passages[pi];
+  const text=p.source||p.sentences.map(s=>s.full).join(' ');
+  if(!confirm('이 지문의 청크·해석을 다시 생성할까요? (수정한 내용은 사라집니다)'))return;
+  const head=document.querySelectorAll('.psg-head')[pi];
+  const d=await analyze(text,head.querySelector('.tag'),head.querySelector('.mini'));
+  if(!d)return;
+  p.sentences=d.sentences;if(d.title)p.title=d.title;save();renderMain();
+}
+
+// ══ 인쇄 ══
+function openPreview(){document.body.classList.add('preview');renderPrint();window.scrollTo(0,0);}
+function closePreview(){document.body.classList.remove('preview');}
+function seededShuffle(arr,seed){const a=arr.slice();let s=seed;
+  for(let i=a.length-1;i>0;i--){s=(s*9301+49297)%233280;const j=Math.floor(s/233280*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function headerHTML(w,p,pi){
+  return `<div class="wb-head"><span class="t1">직독직해 훈련 워크북</span><span class="t2">더블유학원 · ${esc(w.name)} · 지문 ${pi+1}</span></div>
+  <div class="id-line"><span>학교 <span class="bl"></span></span><span>학년 <span class="bl"></span></span><span>이름 <span class="bl"></span></span><span style="margin-left:auto;color:#888;">날짜 <span class="bl"></span></span></div>
+  <div style="font-size:14px;font-weight:800;margin-bottom:2px;">「${esc(p.title)}」</div>`;
+}
+function renderPrint(){
+  const w=curWB();if(!w)return;
+  const withAns=document.getElementById('chk-ans').checked;
+  let out='';
+  w.passages.forEach((p,pi)=>{
+    if(!p.sentences.length)return;
+    // ── 학생용 시트 ──
+    out+=`<div class="sheet${out?' pagebreak':''}">`+headerHTML(w,p,pi);
+    // ① 끊어읽기
+    out+=`<div class="sec-t"><span class="no">①</span>끊어읽기 <small>— 청크(의미단위)로 끊어 읽으며 해석을 확인하세요</small></div><div class="rd">`;
+    p.sentences.forEach((s,si)=>{
+      out+=`<span class="snum">${si+1}</span>`;
+      s.chunks.forEach((c,ci)=>{out+=`<span class="ch">${esc(c[0])}<span class="ko">${esc(c[1])}</span></span>${ci<s.chunks.length-1?'<span class="sl">/</span>':''} `;});
+      out+=' &nbsp; ';
+    });
+    out+=`</div>`;
+    // ② 영→한
+    out+=`<div class="sec-t"><span class="no">②</span>해석 쓰기 <small>— 끊어읽기 순서대로 우리말 해석을 쓰세요</small></div>`;
+    p.sentences.forEach((s,si)=>{out+=`<div class="wr"><span class="snum">${si+1}</span>${s.chunks.map(c=>esc(c[0])).join(' <span style="color:#999;">/</span> ')}<span class="line"></span></div>`;});
+    out+=`</div>`;
+    // ── 2쪽: ③ 영작 / ④ 어순배열 ──
+    out+=`<div class="sheet pagebreak">`+headerHTML(w,p,pi);
+    out+=`<div class="sec-t"><span class="no">③</span>영작 하기 <small>— 우리말 해석을 보고 영어 문장을 쓰세요</small></div>`;
+    p.sentences.forEach((s,si)=>{out+=`<div class="wr"><span class="snum">${si+1}</span><span style="color:#444;">${s.chunks.map(c=>esc(c[1])).join(' <span style="color:#bbb;">/</span> ')}</span><span class="line"></span><span class="line"></span></div>`;});
+    out+=`<div class="sec-t"><span class="no">④</span>어순 배열 <small>— 청크를 올바른 순서로 번호 매기세요 (○ 안에 숫자)</small></div>`;
+    p.sentences.forEach((s,si)=>{
+      const idx=seededShuffle(s.chunks.map((_,i)=>i),si*7+pi*31+s.chunks.length);
+      out+=`<div class="arr"><span class="snum">${si+1}</span><span style="font-size:11px;color:#777;">${esc(s.chunks.map(c=>c[1]).join(' '))}</span><div class="boxes">${idx.map(i=>`<span class="bx"><i></i>${esc(s.chunks[i][0])}</span>`).join('')}</div></div>`;
+    });
+    out+=`</div>`;
+  });
+  // ── 정답지 (교사용) ──
+  if(withAns){
+    out+=`<div class="sheet pagebreak ans"><div class="wb-head"><span class="t1">정답지 (교사용)</span><span class="t2">더블유학원 · ${esc(w.name)}</span></div>`;
+    w.passages.forEach((p,pi)=>{
+      if(!p.sentences.length)return;
+      out+=`<div style="font-size:13px;font-weight:800;margin:14px 0 6px;">지문 ${pi+1}. 「${esc(p.title)}」</div>`;
+      p.sentences.forEach((s,si)=>{
+        const idx=seededShuffle(s.chunks.map((_,i)=>i),si*7+pi*31+s.chunks.length);
+        const order=s.chunks.map((_,i)=>idx.indexOf(i)+1); // 원래 i번째 청크가 몇 번째 박스인지 → 박스별 정답번호
+        const boxAns=idx.map(i=>s.chunks.indexOf(s.chunks[i])+1);
+        out+=`<div class="sent-a"><b>${si+1}.</b> ${esc(s.full)}<br><span style="color:#555;">${esc(s.chunks.map(c=>c[1]).join(' '))}</span>
+        <table><tr>${s.chunks.map(c=>`<td>${esc(c[0])}</td>`).join('')}</tr><tr>${s.chunks.map(c=>`<td class="k">${esc(c[1])}</td>`).join('')}</tr></table>
+        <div style="font-size:10.5px;color:#777;margin-top:2px;">④ 정답 순서: ${idx.map((v,bi)=>`${bi+1}번 박스=${v+1}`).join(', ')}</div></div>`;
+      });
+    });
+    out+=`</div>`;
+  }
+  document.getElementById('print-area').innerHTML=out;
+}
+
+// ══ 내보내기/가져오기 ══
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(state,null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='직독직해_워크북_백업.json';a.click();
+}
+function importJSON(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.workbooks)throw 0;
+    d.workbooks.forEach(w=>{if(!state.workbooks.some(x=>x.id===w.id))state.workbooks.push(w);});
+    save();renderAll();alert('가져오기 완료');}catch(e){alert('파일 형식이 올바르지 않습니다.');}};
+  r.readAsText(f);inp.value='';
+}
+
+function renderAll(){renderSide();renderMain();}
+load();renderAll();
+</script>
+</body>
+</html>
