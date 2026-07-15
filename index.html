@@ -107,7 +107,7 @@ body.preview .preview-bar{display:flex;}
 <body>
 <div class="app">
   <div class="side">
-    <div class="brand">📘 직독직해 워크북<small>더블유학원 · 교사용 제작 툴</small></div>
+    <div class="brand">📘 직독직해 워크북<small>더블유학원 · 교사용 제작 툴 · v1.3</small></div>
     <button class="btn lime" onclick="newWorkbook()">＋ 새 워크북</button>
     <div id="wb-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
     <div class="foot">
@@ -291,10 +291,29 @@ async function callAI(prompt){
   }
   throw new Error('NO_KEY');
 }
+function repairJSON(t){
+  const ends=[];for(let i=t.length;i>0;i--){const c=t[i-1];if(c==='}'||c===']'||c==='"')ends.push(i);if(ends.length>400)break;}
+  for(const end of ends){
+    const s=t.slice(0,end);
+    let stack=[],inStr=false,esc2=false,bad=false;
+    for(const ch of s){
+      if(inStr){ if(esc2)esc2=false; else if(ch==='\\')esc2=true; else if(ch==='"')inStr=false; }
+      else{ if(ch==='"')inStr=true; else if(ch==='{'||ch==='[')stack.push(ch); else if(ch==='}'||ch===']'){if(!stack.length){bad=true;break;}stack.pop();} }
+    }
+    if(bad||inStr)continue;
+    const fixed=s+stack.reverse().map(c=>c==='{'?'}':']').join('');
+    try{return JSON.parse(fixed);}catch(e){}
+  }
+  return null;
+}
+
 function parseAI(text){
   text=text.replace(/```(json)?/g,'').trim();
   const m=text.match(/\{[\s\S]*\}/);if(!m)throw new Error('응답에서 JSON을 찾지 못했습니다');
-  const d=JSON.parse(m[0]);
+  let d;
+  try{ d=JSON.parse(m[0]); }
+  catch(e){ console.warn('JSON 원본 파싱 실패 — 자동 복구 시도', e.message); console.log(text); d=repairJSON(m[0]); if(!d)throw e; }
+  if(Array.isArray(d.sentences))d.sentences=d.sentences.filter(s=>s&&s.full&&Array.isArray(s.chunks)&&s.chunks.length);
   if(!Array.isArray(d.sentences)||!d.sentences.length)throw new Error('문장 데이터가 비어 있습니다');
   d.sentences.forEach(s=>{if(!s.full||!Array.isArray(s.chunks))throw new Error('형식 오류');
     s.chunks=s.chunks.map(c=>[String(c[0]??''),String(c[1]??'')]);});
