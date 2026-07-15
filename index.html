@@ -15,7 +15,7 @@ a{color:var(--limedeep);}a:hover{color:var(--ink);}
 button{font-family:inherit;cursor:pointer;}
 .app{display:flex;min-height:100vh;}
 /* ── 사이드바 ── */
-.side{width:250px;flex:none;background:#fff;border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:8px;}
+.side{width:250px;flex:none;background:#fff;border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:8px;position:sticky;top:0;height:100vh;overflow-y:auto;}
 .brand{font-size:17px;font-weight:900;letter-spacing:-0.02em;padding:4px 6px 12px;}
 .brand small{display:block;font-size:11px;color:var(--sub);font-weight:600;margin-top:2px;}
 .wb-item{display:flex;align-items:center;gap:8px;padding:10px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;text-align:left;width:100%;}
@@ -107,7 +107,7 @@ body.preview .preview-bar{display:flex;}
 <body>
 <div class="app">
   <div class="side">
-    <div class="brand">📘 직독직해 워크북<small>더블유학원 · 교사용 제작 툴 · v1.6</small></div>
+    <div class="brand">📘 직독직해 워크북<small>더블유학원 · 교사용 제작 툴 · v1.7</small></div>
     <button class="btn lime" onclick="newWorkbook()">＋ 새 워크북</button>
     <div id="wb-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
     <div class="foot">
