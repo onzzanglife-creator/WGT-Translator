@@ -90,6 +90,20 @@ body.preview .preview-bar{display:flex;}
 .arr .boxes{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
 .arr .bx{border:1px solid #888;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:6px;}
 .arr .bx i{font-style:normal;width:16px;height:16px;border:1px solid #999;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#aaa;}
+/* 선긋기 매칭 · 2단 훈련 */
+.sub-t{font-size:12.5px;font-weight:900;margin:12px 0 8px;color:#222;}
+.s-lab{font-size:10.5px;font-weight:800;color:#666;margin:8px 0 4px;}
+.match{display:grid;grid-template-columns:1fr 60px 1fr;margin-bottom:10px;page-break-inside:avoid;}
+.match .col{display:flex;flex-direction:column;gap:6px;}
+.mbx{border:1px solid #888;border-radius:6px;padding:4px 8px;font-size:11.5px;line-height:1.45;display:flex;align-items:center;gap:6px;}
+.mbx.l{justify-content:space-between;}
+.mbx .dot{width:5px;height:5px;border-radius:50%;background:#111;flex:none;}
+.mbx .tg{font-weight:800;font-size:10px;color:#888;flex:none;}
+.tw{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;page-break-inside:avoid;}
+.tw .blank{border:1px solid #bbb;border-radius:6px;min-height:26px;}
+.stepchip{border:1px solid #444;background:#2a2b2e;color:#bbb;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;display:inline-flex;gap:6px;align-items:center;cursor:pointer;}
+.stepchip.on{background:var(--lime);color:var(--ink);border-color:var(--lime);}
+.stepchip b{background:#111;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:inline-flex;align-items:center;justify-content:center;}
 .ans .sent-a{margin-bottom:10px;font-size:12px;page-break-inside:avoid;}
 .ans table{border-collapse:collapse;width:100%;margin-top:3px;}
 .ans td{border:1px solid #ccc;padding:3px 6px;font-size:11px;}
@@ -107,7 +121,7 @@ body.preview .preview-bar{display:flex;}
 <body>
 <div class="app">
   <div class="side">
-    <div class="brand">📘 직독직해 워크북<small>더블유학원 · 교사용 제작 툴 · v1.7</small></div>
+    <div class="brand">📘 직독직해 워크북<small>더블유학원 · 교사용 제작 툴 · v1.8</small></div>
     <button class="btn lime" onclick="newWorkbook()">＋ 새 워크북</button>
     <div id="wb-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
     <div class="foot">
@@ -123,11 +137,16 @@ body.preview .preview-bar{display:flex;}
   <div class="main" id="main"></div>
 </div>
 
-<div class="preview-bar">
+<div class="preview-bar" style="flex-wrap:wrap;">
   <b style="font-size:14px;">인쇄 미리보기</b>
-  <span style="font-size:12px;color:#aaa;">Ctrl+P (Mac: Cmd+P) → 인쇄 또는 PDF 저장</span>
+  <span id="opt-steps" style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;"></span>
+  <span style="font-size:11px;color:#888;">클릭 순서대로 배치됩니다</span>
   <span style="flex:1;"></span>
-  <label style="font-size:12px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="chk-ans" checked onchange="renderPrint()"> 정답지 포함</label>
+  <span style="font-size:12px;display:flex;gap:8px;align-items:center;" id="opt-grp">
+    <label style="display:flex;align-items:center;gap:4px;"><input type="radio" name="grp" value="psg" onchange="setGroup('psg')"> 지문별</label>
+    <label style="display:flex;align-items:center;gap:4px;"><input type="radio" name="grp" value="step" onchange="setGroup('step')"> 단계별</label>
+  </span>
+  <label style="font-size:12px;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="chk-ans" checked onchange="printOpt.ans=this.checked;saveOpt();renderPrint()"> 정답지 포함</label>
   <button class="btn lime" onclick="window.print()">🖨 인쇄</button>
   <button class="btn" onclick="closePreview()">← 편집으로</button>
 </div>
@@ -149,7 +168,15 @@ body.preview .preview-bar{display:flex;}
 // ══ 상태 ══
 const LS_KEY='wgt_workbooks_v1', LS_API='wgt_wb_apikey';
 let state={workbooks:[],cur:null};
-function load(){try{const d=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(d&&d.workbooks)state=d;}catch(e){}}
+function fixTone(t){return String(t??'')
+  .replace(/([았었였])습니다/g,'$1다').replace(/입니다/g,'이다').replace(/합니다/g,'한다')
+  .replace(/됩니다/g,'된다').replace(/습니다/g,'다').replace(/하세요/g,'해라');}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(d&&d.workbooks)state=d;}catch(e){}
+  // 기존 데이터 존댓말 → 평서체 일괄 변환
+  let dirty=false;
+  state.workbooks.forEach(w=>w.passages.forEach(p=>p.sentences.forEach(s=>s.chunks.forEach(c=>{const f=fixTone(c[1]);if(f!==c[1]){c[1]=f;dirty=true;}}))));
+  if(dirty)save();
+}
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
 function curWB(){return state.workbooks.find(w=>w.id===state.cur)||null;}
 function uid(){return 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -183,7 +210,7 @@ function renderMain(){
   </div>
   <div class="card">
     <div style="font-weight:800;font-size:14px;margin-bottom:8px;">지문 추가</div>
-    <textarea id="new-psg" placeholder="영어 지문을 붙여넣으세요. (예: 모의고사·교과서 지문 등)"></textarea>
+    <textarea id="new-psg" placeholder="영어 지문을 붙여넣으세요. 여러 지문은 지문 사이에 빈 줄을 한 줄 두고 이어서 붙여넣으면 한 번에 분석됩니다."></textarea>
     <div class="row" style="margin-top:8px;">
       <button class="btn lime" id="analyze-btn" onclick="addPassage()">✨ 자동 분석 (청크+해석)</button>
       <span class="hint" id="analyze-msg"></span>
@@ -327,7 +354,7 @@ function parseAI(text){
   if(Array.isArray(d.sentences))d.sentences=d.sentences.filter(s=>s&&s.full&&Array.isArray(s.chunks)&&s.chunks.length);
   if(!Array.isArray(d.sentences)||!d.sentences.length)throw new Error('문장 데이터가 비어 있습니다');
   d.sentences.forEach(s=>{if(!s.full||!Array.isArray(s.chunks))throw new Error('형식 오류');
-    s.chunks=s.chunks.map(c=>[String(c[0]??''),String(c[1]??'')]);});
+    s.chunks=s.chunks.map(c=>[String(c[0]??''),fixTone(c[1])]);});
   return d;
 }
 async function analyze(text,msgEl,btn){
@@ -347,10 +374,15 @@ async function analyze(text,msgEl,btn){
 async function addPassage(){
   const ta=document.getElementById('new-psg');const text=ta.value.trim();
   if(!text){alert('지문을 붙여넣어 주세요.');return;}
-  const d=await analyze(text,document.getElementById('analyze-msg'),document.getElementById('analyze-btn'));
-  if(!d)return;
-  curWB().passages.push({title:d.title||('지문 '+(curWB().passages.length+1)),source:text,sentences:d.sentences});
-  save();renderMain();
+  const blocks=text.split(/\n\s*\n+/).map(b=>b.trim()).filter(Boolean);
+  for(let i=0;i<blocks.length;i++){
+    const msg=document.getElementById('analyze-msg'),btn=document.getElementById('analyze-btn');
+    if(blocks.length>1)msg.textContent='지문 '+(i+1)+'/'+blocks.length+' 분석 준비…';
+    const d=await analyze(blocks[i],msg,btn);
+    if(!d)return;
+    curWB().passages.push({title:d.title||('지문 '+(curWB().passages.length+1)),source:blocks[i],sentences:d.sentences});
+    save();renderMain();
+  }
 }
 async function reanalyze(pi){
   const p=curWB().passages[pi];
@@ -363,60 +395,86 @@ async function reanalyze(pi){
 }
 
 // ══ 인쇄 ══
-function openPreview(){document.body.classList.add('preview');renderPrint();window.scrollTo(0,0);}
+const STEPS={s0:'Step 0. 끊어읽기',s1:'Step 1. 어순배열',s2:'Step 2. 해석훈련',s3:'Step 3. 영작훈련'};
+let printOpt=(()=>{try{const o=JSON.parse(localStorage.getItem('wgt_wb_printopt'));if(o&&Array.isArray(o.steps)&&o.steps.length)return o;}catch(e){}return{steps:['s0','s1','s2','s3'],group:'psg',ans:true};})();
+function saveOpt(){localStorage.setItem('wgt_wb_printopt',JSON.stringify(printOpt));}
+function toggleStep(id){const i=printOpt.steps.indexOf(id);
+  if(i>=0){if(printOpt.steps.length<=1)return;printOpt.steps.splice(i,1);}else printOpt.steps.push(id);
+  saveOpt();renderOptBar();renderPrint();}
+function setGroup(g){printOpt.group=g;saveOpt();renderPrint();}
+function renderOptBar(){
+  document.getElementById('opt-steps').innerHTML=Object.keys(STEPS).map(id=>{
+    const i=printOpt.steps.indexOf(id);
+    return `<button class="stepchip${i>=0?' on':''}" onclick="toggleStep('${id}')">${i>=0?'<b>'+(i+1)+'</b>':''}${STEPS[id]}</button>`;}).join('');
+  document.querySelector('input[name=grp][value='+printOpt.group+']').checked=true;
+  document.getElementById('chk-ans').checked=printOpt.ans;
+}
+function openPreview(){document.body.classList.add('preview');renderOptBar();renderPrint();window.scrollTo(0,0);}
 function closePreview(){document.body.classList.remove('preview');}
 function seededShuffle(arr,seed){const a=arr.slice();let s=seed;
   for(let i=a.length-1;i>0;i--){s=(s*9301+49297)%233280;const j=Math.floor(s/233280*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
 
-function headerHTML(w,p,pi){
-  return `<div class="wb-head"><span class="t1">직독직해 훈련 워크북</span><span class="t2">더블유학원 · ${esc(w.name)} · 지문 ${pi+1}</span></div>
+function headerHTML(w,p,pi,stepLabel){
+  return `<div class="wb-head"><span class="t1">직독직해 훈련 워크북</span><span class="t2">더블유학원 · ${esc(w.name)} · 지문 ${pi+1}${stepLabel?' · '+stepLabel:''}</span></div>
   <div class="id-line"><span>학교 <span class="bl"></span></span><span>학년 <span class="bl"></span></span><span>이름 <span class="bl"></span></span><span style="margin-left:auto;color:#888;">날짜 <span class="bl"></span></span></div>
   <div style="font-size:14px;font-weight:800;margin-bottom:2px;">「${esc(p.title)}」</div>`;
 }
-function renderPrint(){
-  const w=curWB();if(!w)return;
-  const withAns=document.getElementById('chk-ans').checked;
+const CIRC='ⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣ';
+function shufIdx(s,si,pi,salt){return seededShuffle(s.chunks.map((_,i)=>i),si*7+pi*31+s.chunks.length+salt);}
+function matchHTML(s,si,pi,dir){ // dir 'ek': 왼쪽 영어(순서)·오른쪽 한글(스크램블) / 'ke': 반대
+  const l=dir==='ek'?0:1, r=1-l, idx=shufIdx(s,si,pi,dir==='ek'?0:13);
+  return `<div class="s-lab">문장 ${si+1}</div><div class="match">
+    <div class="col">${s.chunks.map((c,i)=>`<span class="mbx l"><span style="display:flex;gap:6px;align-items:center;"><span class="tg">${i+1}</span><span>${esc(c[l])}</span></span><span class="dot"></span></span>`).join('')}</div><div></div>
+    <div class="col">${idx.map((ci,j)=>`<span class="mbx"><span class="dot"></span><span class="tg">${CIRC[j]}</span><span>${esc(s.chunks[ci][r])}</span></span>`).join('')}</div></div>`;
+}
+function twoColHTML(s,si,k){ // 왼쪽 k(0=영어/1=한글) 청크 순서대로 + 오른쪽 빈칸
+  return `<div class="s-lab">문장 ${si+1}</div><div class="tw">${s.chunks.map((c,i)=>`<span class="mbx"><span class="tg">${i+1}</span><span>${esc(c[k])}</span></span><span class="blank"></span>`).join('')}</div>`;
+}
+function stepBody(p,pi,st){
   let out='';
-  w.passages.forEach((p,pi)=>{
-    if(!p.sentences.length)return;
-    // ── 학생용 시트 ──
-    out+=`<div class="sheet${out?' pagebreak':''}">`+headerHTML(w,p,pi);
-    // ① 끊어읽기
-    out+=`<div class="sec-t"><span class="no">①</span>끊어읽기 <small>— 청크(의미단위)로 끊어 읽으며 해석을 확인하세요</small></div><div class="rd">`;
+  if(st==='s0'){
+    out+=`<div class="sec-t"><span class="no">Step 0</span>끊어읽기 <small>— 청크(의미단위)로 끊어 읽으며 해석을 확인하세요</small></div><div class="rd">`;
     p.sentences.forEach((s,si)=>{
       out+=`<span class="snum">${si+1}</span>`;
       s.chunks.forEach((c,ci)=>{out+=`<span class="ch">${esc(c[0])}<span class="ko">${esc(c[1])}</span></span>${ci<s.chunks.length-1?'<span class="sl">/</span>':''} `;});
       out+=' &nbsp; ';
     });
     out+=`</div>`;
-    // ② 영→한
-    out+=`<div class="sec-t"><span class="no">②</span>해석 쓰기 <small>— 끊어읽기 순서대로 우리말 해석을 쓰세요</small></div>`;
-    p.sentences.forEach((s,si)=>{out+=`<div class="wr"><span class="snum">${si+1}</span>${s.chunks.map(c=>esc(c[0])).join(' <span style="color:#999;">/</span> ')}<span class="line"></span></div>`;});
-    out+=`</div>`;
-    // ── 2쪽: ③ 영작 / ④ 어순배열 ──
-    out+=`<div class="sheet pagebreak">`+headerHTML(w,p,pi);
-    out+=`<div class="sec-t"><span class="no">③</span>영작 하기 <small>— 우리말 해석을 보고 영어 문장을 쓰세요</small></div>`;
-    p.sentences.forEach((s,si)=>{out+=`<div class="wr"><span class="snum">${si+1}</span><span style="color:#444;">${s.chunks.map(c=>esc(c[1])).join(' <span style="color:#bbb;">/</span> ')}</span><span class="line"></span><span class="line"></span></div>`;});
-    out+=`<div class="sec-t"><span class="no">④</span>어순 배열 <small>— 청크를 올바른 순서로 번호 매기세요 (○ 안에 숫자)</small></div>`;
-    p.sentences.forEach((s,si)=>{
-      const idx=seededShuffle(s.chunks.map((_,i)=>i),si*7+pi*31+s.chunks.length);
-      out+=`<div class="arr"><span class="snum">${si+1}</span><span style="font-size:11px;color:#777;">${esc(s.chunks.map(c=>c[1]).join(' '))}</span><div class="boxes">${idx.map(i=>`<span class="bx"><i></i>${esc(s.chunks[i][0])}</span>`).join('')}</div></div>`;
-    });
-    out+=`</div>`;
-  });
+  }
+  if(st==='s1'){
+    out+=`<div class="sec-t"><span class="no">Step 1</span>어순 배열 <small>— 뜻이 같은 청크끼리 선으로 연결하세요</small></div>`;
+    out+=`<div class="sub-t">1-1. 영어 → 우리말 (왼쪽 순서대로 읽고, 맞는 해석과 연결)</div>`;
+    p.sentences.forEach((s,si)=>{out+=matchHTML(s,si,pi,'ek');});
+    out+=`<div class="sub-t" style="margin-top:16px;">1-2. 우리말 → 영어 (왼쪽 순서대로 읽고, 맞는 영어와 연결)</div>`;
+    p.sentences.forEach((s,si)=>{out+=matchHTML(s,si,pi,'ke');});
+  }
+  if(st==='s2'){
+    out+=`<div class="sec-t"><span class="no">Step 2</span>해석 훈련 <small>— 왼쪽 영어 청크의 해석을 오른쪽 칸에 쓰세요</small></div>`;
+    p.sentences.forEach((s,si)=>{out+=twoColHTML(s,si,0);});
+  }
+  if(st==='s3'){
+    out+=`<div class="sec-t"><span class="no">Step 3</span>영작 훈련 <small>— 왼쪽 우리말 청크를 영어로 오른쪽 칸에 쓰세요</small></div>`;
+    p.sentences.forEach((s,si)=>{out+=twoColHTML(s,si,1);});
+  }
+  return out;
+}
+function renderPrint(){
+  const w=curWB();if(!w)return;
+  const psgs=w.passages.map((p,pi)=>({p,pi})).filter(x=>x.p.sentences.length);
+  const combos=[];
+  if(printOpt.group==='psg'){psgs.forEach(x=>printOpt.steps.forEach(st=>combos.push({p:x.p,pi:x.pi,st})));}
+  else{printOpt.steps.forEach(st=>psgs.forEach(x=>combos.push({p:x.p,pi:x.pi,st})));}
+  let out=combos.map((c,k)=>`<div class="sheet${k?' pagebreak':''}">`+headerHTML(w,c.p,c.pi,STEPS[c.st])+stepBody(c.p,c.pi,c.st)+`</div>`).join('');
   // ── 정답지 (교사용) ──
-  if(withAns){
+  if(printOpt.ans&&combos.length){
     out+=`<div class="sheet pagebreak ans"><div class="wb-head"><span class="t1">정답지 (교사용)</span><span class="t2">더블유학원 · ${esc(w.name)}</span></div>`;
-    w.passages.forEach((p,pi)=>{
-      if(!p.sentences.length)return;
+    psgs.forEach(({p,pi})=>{
       out+=`<div style="font-size:13px;font-weight:800;margin:14px 0 6px;">지문 ${pi+1}. 「${esc(p.title)}」</div>`;
       p.sentences.forEach((s,si)=>{
-        const idx=seededShuffle(s.chunks.map((_,i)=>i),si*7+pi*31+s.chunks.length);
-        const order=s.chunks.map((_,i)=>idx.indexOf(i)+1); // 원래 i번째 청크가 몇 번째 박스인지 → 박스별 정답번호
-        const boxAns=idx.map(i=>s.chunks.indexOf(s.chunks[i])+1);
+        const iek=shufIdx(s,si,pi,0), ike=shufIdx(s,si,pi,13);
         out+=`<div class="sent-a"><b>${si+1}.</b> ${esc(s.full)}<br><span style="color:#555;">${esc(s.chunks.map(c=>c[1]).join(' '))}</span>
-        <table><tr>${s.chunks.map(c=>`<td>${esc(c[0])}</td>`).join('')}</tr><tr>${s.chunks.map(c=>`<td class="k">${esc(c[1])}</td>`).join('')}</tr></table>
-        <div style="font-size:10.5px;color:#777;margin-top:2px;">④ 정답 순서: ${idx.map((v,bi)=>`${bi+1}번 박스=${v+1}`).join(', ')}</div></div>`;
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${s.chunks.map((c,i)=>`<span style="border:1px solid #ccc;border-radius:5px;padding:2px 7px;font-size:10.5px;line-height:1.5;"><b style="color:#999;font-size:9px;">${i+1}</b> ${esc(c[0])}<br><span style="color:#666;">${esc(c[1])}</span></span>`).join('')}</div>
+        <div style="font-size:10.5px;color:#777;margin-top:2px;">1-1 연결: ${s.chunks.map((_,i)=>`${i+1}→${CIRC[iek.indexOf(i)]}`).join('&nbsp; ')} &nbsp;·&nbsp; 1-2 연결: ${s.chunks.map((_,i)=>`${i+1}→${CIRC[ike.indexOf(i)]}`).join('&nbsp; ')}</div></div>`;
       });
     });
     out+=`</div>`;
