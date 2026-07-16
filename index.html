@@ -420,7 +420,9 @@ function headerHTML(w,p,pi,stepLabel){
   <div style="font-size:14px;font-weight:800;margin-bottom:2px;">「${esc(p.title)}」</div>`;
 }
 const CIRC='ⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣ';
-function shufIdx(s,si,pi,salt){return seededShuffle(s.chunks.map((_,i)=>i),si*7+pi*31+s.chunks.length+salt);}
+function shufIdx(s,si,pi,salt){const base=s.chunks.map((_,i)=>i);let idx=seededShuffle(base,si*7+pi*31+s.chunks.length+salt);
+  if(base.length>1&&idx.every((v,i)=>v===i)){idx=idx.slice(1).concat(idx[0]);} // 항등순열이면 회전시켜 반드시 섞이게
+  return idx;}
 function matchHTML(s,si,pi,dir){ // dir 'ek': 왼쪽 영어(순서)·오른쪽 한글(스크램블) / 'ke': 반대
   const l=dir==='ek'?0:1, r=1-l, idx=shufIdx(s,si,pi,dir==='ek'?0:13);
   return `<div class="s-lab">문장 ${si+1}</div><div class="match">
